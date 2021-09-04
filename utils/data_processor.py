@@ -3,7 +3,7 @@ import pandas as pd
 import tqdm
 import os
 
-class train_process():
+class train_processor():
 
     def __init__(self,path):
         self.path=path
@@ -33,6 +33,30 @@ class train_process():
         
         df=pd.DataFrame(dic_out)
         return df
+
+class test_processor():
+
+    def __init__(self,path):
+        self.path=path
+    
+    def loader(self):
+        test_dict=defaultdict(list)
+        
+        with open(self.path,'r') as test_file:
+            tmp=[]
+            for line in test_file:
+                if line.startswith('>'):
+                    tmp.append([])
+                tmp[-1].append(line.strip())
+            
+            for item in tmp:
+                test_dict['sid'].append(item[0][1:])
+                test_dict['sequence'].append(''.join(item[1:]))
+
+        df=pd.DataFrame(test_data)   
+        return df
+    
+
 
 
 
