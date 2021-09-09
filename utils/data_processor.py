@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 import pandas as pd
-import tqdm
+from tqdm import tqdm
 import os
+from collections import defaultdict
+import re
 
 class train_processor():
 
@@ -16,10 +18,6 @@ class train_processor():
                     out.append([])
                 out[-1].append(line.strip())
         out=list(map(lambda x:''.join(x),out))
-        return out
-
-    def transform2df(self):
-        out=self.loader()
         out=[out[i].split('}') for i in range(len(out))]
         
         dic_out=defaultdict(list)
@@ -44,7 +42,7 @@ class test_processor():
         
         with open(self.path,'r') as test_file:
             tmp=[]
-            for line in test_file:
+            for line in tqdm(test_file):
                 if line.startswith('>'):
                     tmp.append([])
                 tmp[-1].append(line.strip())
@@ -53,7 +51,7 @@ class test_processor():
                 test_dict['sid'].append(item[0][1:])
                 test_dict['sequence'].append(''.join(item[1:]))
 
-        df=pd.DataFrame(test_data)   
+        df=pd.DataFrame(test_dict)   
         return df
     
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import tqdm
+from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
 from utils.dataset import trainset,testset
@@ -38,24 +38,25 @@ def label2id(label,label_dict):
     return label_dict.get(label)
 
 
-def prep_dataloader(type='train',data,token_dict,label_dict,max_len):
+def prep_dataloader(type,data,token_dict,label_dict,max_len):
     if type=='train':
         # type of data:DataFrame
-        data.sample(frac=1.0).reset_index(drop=True,inplace=True)
+        data=data.sample(frac=1.0) # shuffle
+        data.reset_index(drop=True,inplace=True)
         train_data=data.iloc[:9000,:]
         val_data=data.iloc[9000:,:].reset_index(drop=True)
         
-        train_class=len(train_data.label.unique())
-        count=1
-        # make sure each category exists in the train data
-        while train_class!=245: # 245:total number of labels
-            data.sample(frac=1.0).reset_index(drop=True,inplace=True)
-            train_data=data.iloc[:9000,:]
-            val_data=data.iloc[9000:,:].reset_index(drop=True)
+        # train_class=len(train_data.label.unique())
+        # count=1
+        # # make sure each category exists in the train data
+        # while train_class!=245: # 245:total number of labels
+        #     data.sample(frac=1.0).reset_index(drop=True,inplace=True)
+        #     train_data=data.iloc[:9000,:]
+        #     val_data=data.iloc[9000:,:].reset_index(drop=True)
 
-            train_class=len(train_data.label.unique())
-            count+=1
-        print(f'>>Split Done in {count} trial!')
+        #     train_class=len(train_data.label.unique())
+        #     count+=1
+        # print(f'>>Split Done in {count} trial!')
 
         # train data
         train_x,train_y=[],[]
