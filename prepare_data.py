@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from tqdm import tqdm
+import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 from utils.dataset import trainset,testset
@@ -26,10 +27,9 @@ def build_label_dict(train_df):
         label_dict[label]=len(label_dict)
     return label_dict
 
-def max_len(train_df,test_df): #in form of DataFrame
-    train_max=train_df.sequence.apply(lambda x:len(x)).max()
-    test_max=test_df.sequence.apply(lambda x:len(x)).max()
-    return max(train_max,test_max)
+def max_len(train_df): #in form of DataFrame
+    train_len_li=sorted(train_df.sequence.apply(lambda x:len(x)).tolist())
+    return train_len_li[int(len(train_len_li)*0.98)]
 
 def token2id(tokens,token_dict): # list of tokens
     return [token_dict.get(token,1) for token in tokens]
@@ -41,11 +41,14 @@ def label2id(label,label_dict):
 def prep_dataloader(type,data,token_dict,label_dict,max_len):
     if type=='train':
         # type of data:DataFrame
-        data=data.sample(frac=1.0) # shuffle
-        data.reset_index(drop=True,inplace=True)
-        train_data=data.iloc[:9000,:]
-        val_data=data.iloc[9000:,:].reset_index(drop=True)
+        train_data_li,val_data_li=[],[]
+        for ul in tqdm(data.label.unique()):
+            sub_df=data[data.label==ul].reset_index(drop=True)
+            val_data_li.append(sub_df.iloc[:2,:])
+            train_data_li.append(sub_df.iloc[2:,:])
         
+        train_data=pd.concat(train_data_li).reset_index(drop=True)
+        val_data=pd.concat(val_data_li).reset_index(drop=True)
         # train_class=len(train_data.label.unique())
         # count=1
         # # make sure each category exists in the train data
@@ -63,7 +66,8 @@ def prep_dataloader(type,data,token_dict,label_dict,max_len):
         for i in tqdm(range(train_data.shape[0])):
             seq=train_data.sequence[i]
             token_li=[seq[j] for j in range(len(seq))]
-            x=token2id(token_li,token_dict)+[0]*(max_len-len(seq))
+            x=token2id(token_li,token_dict)
+            x=x+[0]*(max_len-len(x)) if len(x)<=max_len else x[:max_len]
             y=label2id(train_data.label[i],label_dict)
             train_x.append(x)
             train_y.append(y)
@@ -78,7 +82,8 @@ def prep_dataloader(type,data,token_dict,label_dict,max_len):
         for i in tqdm(range(val_data.shape[0])):
             seq=val_data.sequence[i]
             token_li=[seq[j] for j in range(len(seq))]
-            x=token2id(token_li,token_dict)+[0]*(max_len-len(seq))
+            x=token2id(token_li,token_dict)
+            x=x+[0]*(max_len-len(x)) if len(x)<=max_len else x[:max_len]
             y=label2id(val_data.label[i],label_dict)
             val_x.append(x)
             val_y.append(y)
@@ -94,7 +99,8 @@ def prep_dataloader(type,data,token_dict,label_dict,max_len):
         for i in tqdm(range(data.shape[0])):
             seq=data.sequence[i]
             token_li=[seq[j] for j in range(len(seq))]
-            x=token2id(token_li,token_dict)+[0]*(max_len-len(seq))
+            x=token2id(token_li,token_dict)
+            x=x+[0]*(max_len-len(x)) if len(x)<=max_len else x[:max_len]
             test_x.append(x)
         test_x=torch.tensor(test_x,dtype=torch.long)
         test=testset(test_x)

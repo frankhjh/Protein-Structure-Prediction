@@ -15,11 +15,28 @@ parser.add_argument('--epochs',type=int)
 parser.add_argument('--device',type=str)
 args=parser.parse_args()
 
-def predict():
-    pass
-
-def submit():
-    pass
+def predict(model,test_dataloader,device,label_dict):
+    inv_label_dict={}
+    for k,v in label_dict.items():
+        inv_label_dict[v]=k
+    
+    prediction=[]
+    for step,x in tqdm(enumerate(test_dataloader)):
+        x=x.to(device)
+        with torch.no_grad():
+            pred=model(x).sequeeze(0)
+            pred_arr=pred.softmax(0).detach().numpy()
+            
+            pred_label_idx=np.argmax(pred_arr)
+            prediction.append(inv_label_dict[pred_label_idx])
+    print('>>predict done!')
+    return prediction
+            
+def submit(test_df,prediction):
+    test_df['category_id']=prediction
+    output=test_df[['sample_id','category_id']]
+    output.to_csv('./tmp/submission.csv',header=True,index=False)
+    print('>>submitted!')
 
 def main():
 
@@ -35,7 +52,8 @@ def main():
     # label dict
     label_dict=build_label_dict(train_df)
     # get max len
-    maxlen=max_len(train_df,test_df)
+    maxlen=max_len(train_df)
+    print(f'>>maxlen={maxlen}')
 
     # prepare train_dataloader/val_dataloader & test_dataloader
     train_dataloader,val_dataloader=prep_dataloader('train',train_df,token_dict,label_dict,maxlen)
@@ -49,11 +67,16 @@ def main():
     # train 
     epochs=args.epochs
     device=args.device
+
+    model.to(device) 
     train(model,train_dataloader,val_dataloader,epochs,device)
 
     # predict
-
+    model.load_state_dict(torch.load('./train_out/bm.ckpt'))
+    prediction=predict(model,test_dataloader,device)
+    
     # submit
+    submit(test_df,prediction)
 
 
 if __name__=='__main__':

@@ -48,7 +48,7 @@ class test_processor():
                 tmp[-1].append(line.strip())
             
             for item in tmp:
-                test_dict['sid'].append(item[0][1:])
+                test_dict['sample_id'].append(item[0][1:])
                 test_dict['sequence'].append(''.join(item[1:]))
 
         df=pd.DataFrame(test_dict)   
