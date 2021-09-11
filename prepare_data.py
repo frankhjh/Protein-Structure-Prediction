@@ -37,7 +37,22 @@ def token2id(tokens,token_dict): # list of tokens
 def label2id(label,label_dict):
     return label_dict.get(label)
 
+def get_weight(train_data):
+    label_count=train_data.groupby('label').count().to_dict()['sequence']
 
+    idx_count=dict()
+    for label,count in label_count.items():
+        idx_count[label_dict[label]]=count
+    
+    idx_weight=dict()
+    max_count=max(idx_count.values())
+    for idx,count in idx_count.items():
+        idx_weight[idx]=max_count/count
+    
+    sorted_idx_weight=sorted(idx_weight.items(),key=lambda x:x[0])
+    weight_li=[i[1] for i in sorted_idx_weight]
+    return torch.tensor(weight_li,dtype=torch.float)
+    
 def prep_dataloader(type,data,token_dict,label_dict,max_len):
     if type=='train':
         # type of data:DataFrame
@@ -49,17 +64,8 @@ def prep_dataloader(type,data,token_dict,label_dict,max_len):
         
         train_data=pd.concat(train_data_li).reset_index(drop=True)
         val_data=pd.concat(val_data_li).reset_index(drop=True)
-        # train_class=len(train_data.label.unique())
-        # count=1
-        # # make sure each category exists in the train data
-        # while train_class!=245: # 245:total number of labels
-        #     data.sample(frac=1.0).reset_index(drop=True,inplace=True)
-        #     train_data=data.iloc[:9000,:]
-        #     val_data=data.iloc[9000:,:].reset_index(drop=True)
 
-        #     train_class=len(train_data.label.unique())
-        #     count+=1
-        # print(f'>>Split Done in {count} trial!')
+        class_weights=get_weight(train_data)
 
         # train data
         train_x,train_y=[],[]
@@ -93,7 +99,7 @@ def prep_dataloader(type,data,token_dict,label_dict,max_len):
         valid=trainset(val_x,val_y) # same dataset build method!
         val_dataloader=DataLoader(valid,batch_size=32,shuffle=False)
 
-        return train_dataloader,val_dataloader
+        return train_dataloader,val_dataloader,class_weights
     else:
         test_x=[]
         for i in tqdm(range(data.shape[0])):

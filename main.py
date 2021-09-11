@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 import pandas as pd
+import numpy as np
 import os
+from tqdm import tqdm
 import torch
-import torch.nn
+import torch.nn as nn
 from torch import optim
 from model.mk_cnn import multi_kernel_cnn
 from train import evalute,train
@@ -24,7 +26,7 @@ def predict(model,test_dataloader,device,label_dict):
     for step,x in tqdm(enumerate(test_dataloader)):
         x=x.to(device)
         with torch.no_grad():
-            pred=model(x).sequeeze(0)
+            pred=model(x).squeeze(0).cpu()
             pred_arr=pred.softmax(0).detach().numpy()
             
             pred_label_idx=np.argmax(pred_arr)
@@ -56,7 +58,7 @@ def main():
     print(f'>>maxlen={maxlen}')
 
     # prepare train_dataloader/val_dataloader & test_dataloader
-    train_dataloader,val_dataloader=prep_dataloader('train',train_df,token_dict,label_dict,maxlen)
+    train_dataloader,val_dataloader,class_weights=prep_dataloader('train',train_df,token_dict,label_dict,maxlen)
     test_dataloader=prep_dataloader('test',test_df,token_dict,label_dict,maxlen)
     print('>>dataloader prepared!')
 
@@ -69,11 +71,11 @@ def main():
     device=args.device
 
     model.to(device) 
-    train(model,train_dataloader,val_dataloader,epochs,device)
+    train(model,train_dataloader,class_weights,val_dataloader,epochs,device)
 
     # predict
     model.load_state_dict(torch.load('./train_out/bm.ckpt'))
-    prediction=predict(model,test_dataloader,device)
+    prediction=predict(model,test_dataloader,device,label_dict)
     
     # submit
     submit(test_df,prediction)

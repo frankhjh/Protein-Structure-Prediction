@@ -16,10 +16,10 @@ def evalute(metric,model,loader,device):
     return val_loss/(step+1)
         
         
-def train(model,train_dataloader,val_dataloader,epochs,device,lr=1e-3):
+def train(model,train_dataloader,class_weights,val_dataloader,epochs,device,lr=1e-3):
     m=model
     optimizer=optim.Adam(m.parameters(),lr=lr)
-    metric=nn.CrossEntropyLoss()
+    metric=nn.CrossEntropyLoss(weight=class_weights.to(device))
     
     min_loss,best_epoch=10000.0,1
     print('>>Start Training...')
