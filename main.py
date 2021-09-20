@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 from torch import optim
 from model.mk_cnn import multi_kernel_cnn
+from model.lstm_cnn import lstm_cnn
 from train import evalute,train
 from prepare_data import build_token_dict,build_label_dict,max_len,token2id,label2id,prep_dataloader
 from utils.data_processor import train_processor,test_processor
